@@ -1,5 +1,6 @@
 use super::module::*;
 use super::types::*;
+use super::instructions::*;
 
 use super::errors::{Error, Result};
 use std::convert::TryInto;
@@ -15,8 +16,8 @@ pub fn decode_file(filename: PathBuf) -> Result<Module> {
 }
 
 fn decode(_data: Vec<u8>) -> Result<Module> {
-    unimplemented!();
-    // Ok(Module::new())
+    let mut reader = WasmReader::new(_data);
+    Ok(reader.read_module())
 }
 
 // leb128
@@ -68,6 +69,11 @@ struct WasmReader {
 }
 
 impl WasmReader {
+    fn new(data_: Vec<u8>) -> Self {
+        WasmReader{
+            data: data_
+        }
+    }
     fn read_byte(&mut self) -> u8 {
         let b = self.data.remove(0);
         b
@@ -223,7 +229,141 @@ impl WasmReader {
         };
         CustomSec::new(sec_wasm_reader.read_name(), sec_wasm_reader.data)
     }
-    fn read_non_custom_sec(&mut self, sec_id: &SecID, module: &mut Module) {}
+
+    fn read_import_sec(&mut self) -> Vec<Import> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<Import> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_import());
+        }
+        result
+    }
+    fn read_import(&mut self) -> Import {
+        Import {
+            module: self.read_name(),
+            name: self.read_name(),
+            desc: self.read_import_desc(),
+        }
+    }
+
+    fn read_indices(&mut self) -> Vec<TypeIdx>  {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<TypeIdx> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_var_u32());
+        }
+        result
+    }
+    fn read_table_sec(&mut self) -> Vec<TableType> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<TableType> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_table_type());
+        }
+        result
+    }
+    fn read_mem_sec(&mut self) -> Vec<MemType> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<MemType> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_limits());
+        }
+        result
+    }
+    fn read_global_sec(&mut self) -> Vec<Global> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<Global> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(Global{
+                type_: self.read_global_type(),
+                init: self.read_expr(),
+            });
+        }
+        result
+    }
+    fn read_expr(&mut self) -> Expr {
+        unimplemented!();
+        // while self.read_byte() != 0x08 {
+    }
+    fn read_export_sec(&mut self) -> Vec<Export> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<Export> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_export());
+        }
+        result
+    }
+    fn read_export(&mut self) -> Export {
+        Export{
+            name: self.read_name(),
+            desc: self.read_export_desc(),
+        }
+    }
+    fn read_export_desc(&mut self) -> ExportDesc {
+        unimplemented!();
+    }
+    fn read_start_sec(&mut self) -> Option<u32> {
+        Some(self.read_var_u32())
+    }
+    fn read_elem_sec(&mut self) -> Vec<Elem> {
+        let cap = self.read_var_u32() as usize;
+        let mut  result: Vec<Elem> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_elem());
+        }
+        result
+    }
+    fn read_elem(&mut self) -> Elem {
+        Elem {
+            table: self.read_var_u32(),
+            offset: self.read_expr(),
+            init: self.read_indices(),
+        }
+    }
+    fn read_code_sec(&mut self) -> Vec<Code> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<Code> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_code());
+        }
+        result
+    }
+    fn read_code(&mut self) -> Code {
+        unimplemented!();
+    }
+    fn read_data_sec(&mut self) -> Vec<Data> {
+        let cap = self.read_var_u32() as usize;
+        let mut  result: Vec<Data> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_data());
+        }
+        result
+    }
+
+    fn read_data(&mut self) -> Data {
+        Data {
+            mem: self.read_var_u32(),
+            offset: self.read_expr(),
+            init: self.read_bytes(),
+        }
+    }
+
+    fn read_non_custom_sec(&mut self, sec_id: &SecID, module: &mut Module) {
+        match sec_id {
+            SecID::SecCustomID => panic!("custom sec should not be read here"), // 0
+            SecID::SecTypeID => module.type_secs = self.read_type_sec(),
+            SecID::SecImportID => module.import_secs = self.read_import_sec(), // 2
+            SecID::SecFuncID => module.func_secs = self.read_indices(),   // 3
+            SecID::SecTableID => module.table_secs = self.read_table_sec(),  // 4
+            SecID::SecMemID => module.mem_secs = self.read_mem_sec(),    // 5
+            SecID::SecGlobalID => module.global_secs = self.read_global_sec(), // 6
+            SecID::SecExportID => module.export_secs = self.read_export_sec(), // 7
+            SecID::SecStartID => module.start_sec = self.read_start_sec(),  // 8
+            SecID::SecElemID => module.elem_secs = self.read_elem_sec(),   // 9
+            SecID::SecCodeID => module.code_secs = self.read_code_sec(),   // 10
+            SecID::SecDataID => module.data_secs = self.read_data_sec(),   // 11
+        }
+    }
 }
 
 #[cfg(test)]

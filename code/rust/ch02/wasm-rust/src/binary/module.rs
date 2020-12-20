@@ -25,13 +25,7 @@ impl fmt::Display for SecID {
     }
 }
 
-type TypeIdx = u32;
-type FuncIdx = u32;
-type TableIdx = u32;
-type MemIdx = u32;
-type GlobalIdx = u32; // 全局变量
-type LocalIdx = u32; // 局部变量
-type LabelIdx = u32; // 跳转标签
+
 
 const MAGIC_NUMBER: u32 = 0x6D736100; // `/asm`
 const VERSION: u32 = 0x00000001; // 1
@@ -41,7 +35,7 @@ pub struct Module {
     pub magic: u32,
     pub version: u32,
     pub custom_secs: Vec<CustomSec>,
-    pub type_secs: Vec<FuncSec>,
+    pub type_secs: Vec<FuncType>,
     pub import_secs: Vec<Import>,
     pub func_secs: Vec<TypeIdx>,
     pub table_secs: Vec<TableType>,
@@ -71,13 +65,10 @@ impl CustomSec {
 }
 
 #[derive(Debug)]
-pub struct FuncSec {}
-
-#[derive(Debug)]
 pub struct Import {
-    module: String,
-    name: String,
-    desc: ImportDesc,
+    pub module: String,
+    pub name: String,
+    pub desc: ImportDesc,
 }
 
 #[derive(Debug, FromPrimitive)]
@@ -117,14 +108,14 @@ impl Default for ImportDesc {
 /// expr       : byte*|0x0B
 #[derive(Debug, Default)]
 pub struct Global {
-    type_: GlobalType,
-    init: Expr,
+    pub type_: GlobalType,
+    pub init: Expr,
 }
 
 #[derive(Debug, Default)]
 pub struct Export {
-    name: String,
-    desc: ExportDesc,
+    pub name: String,
+    pub desc: ExportDesc,
 }
 
 #[derive(Debug)]
@@ -141,16 +132,16 @@ impl Default for ExportTag {
 }
 
 #[derive(Debug, Default)]
-struct ExportDesc {
+pub struct ExportDesc {
     tag: ExportTag,
     idx: u32,
 }
 
 #[derive(Debug, Default)]
 pub struct Elem {
-    table: TableIdx,
-    offset: Expr,
-    init: Vec<FuncIdx>,
+    pub table: TableIdx,
+    pub offset: Expr,
+    pub init: Vec<FuncIdx>,
 }
 
 #[derive(Debug, Default)]
@@ -173,7 +164,7 @@ pub struct Locals {
 
 #[derive(Debug, Default)]
 pub struct Data {
-    mem: MemIdx,
-    offset: Expr,
-    init: Vec<u8>,
+    pub mem: MemIdx,
+    pub offset: Expr,
+    pub init: Vec<u8>,
 }

@@ -1,3 +1,11 @@
+pub type TypeIdx = u32;
+pub type FuncIdx = u32;
+pub type TableIdx = u32;
+pub type MemIdx = u32;
+pub type GlobalIdx = u32; // 全局变量
+pub type LocalIdx = u32; // 局部变量
+pub type LabelIdx = u32; // 跳转标签
+
 #[repr(u8)]
 #[derive(Debug, FromPrimitive)]
 pub enum ValType {
@@ -13,6 +21,7 @@ impl Default for ValType {
     }
 }
 
+#[derive(Debug)]
 pub struct FuncType {
     tag: u8,
     param_types: Vec<ValType>,
