@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub type TypeIdx = u32;
 pub type FuncIdx = u32;
 pub type TableIdx = u32;
@@ -20,12 +22,31 @@ impl Default for ValType {
         ValType::I32
     }
 }
+impl fmt::Display for ValType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let type_string = match self {
+            ValType::I32 => "i32",
+            ValType::I64 => "i64",
+            ValType::F32 => "f32",
+            ValType::F64 => "f64",
+        };
+        write!(f, "{}", type_string)
+    }
+}
 
 #[derive(Debug)]
 pub struct FuncType {
     tag: u8,
     param_types: Vec<ValType>,
     result_types: Vec<ValType>,
+}
+
+impl fmt::Display for FuncType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let params: Vec<String> = self.param_types.iter().map(|x| x.to_string()).collect();
+        let results: Vec<String> = self.result_types.iter().map(|x| x.to_string()).collect();
+        write!(f, "({}) -> ({})", params.join(","), results.join(","))
+    }
 }
 
 impl FuncType {
@@ -53,6 +74,15 @@ impl Default for Limits {
     }
 }
 
+impl fmt::Display for Limits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Limits::LimitsMin(min) => write!(f, "{{min: {}}}", min),
+            Limits::LimitsMinMax(min, max) => write!(f, "{{min: {}, max: {}}}", min, max),
+        }
+    }
+}
+
 pub type MemType = Limits;
 
 #[repr(u8)]
@@ -73,8 +103,8 @@ impl Default for ElemType {
 /// limits    : tag|min|max?
 #[derive(Debug, Default)]
 pub struct TableType {
-    elem_type: ElemType, //目前只能是0x70
-    limits: Limits,
+    pub elem_type: ElemType, //目前只能是0x70
+    pub limits: Limits,
 }
 
 impl TableType {
@@ -99,6 +129,15 @@ impl Default for MutType {
     }
 }
 
+impl fmt::Display for MutType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MutType::Const => write!(f, "const"),
+            MutType::Var => write!(f, "var"),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct GlobalType {
     val_type: ValType,
@@ -111,5 +150,11 @@ impl GlobalType {
             val_type: val_type_,
             mut_: mut__,
         }
+    }
+}
+
+impl fmt::Display for GlobalType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.mut_, self.val_type)
     }
 }

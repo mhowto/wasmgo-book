@@ -19,13 +19,11 @@ pub enum SecID {
     SecDataID,   // 11
 }
 
-impl fmt::Display for SecID {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-
+// impl fmt::Display for SecID {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "{}", self)
+//     }
+// }
 
 const MAGIC_NUMBER: u32 = 0x6D736100; // `/asm`
 const VERSION: u32 = 0x00000001; // 1
@@ -51,8 +49,8 @@ pub struct Module {
 /// 字符串作为自定义段的名称起到标识作用
 #[derive(Debug)]
 pub struct CustomSec {
-    name: String,
-    bytes: Vec<u8>,
+    pub name: String,
+    pub bytes: Vec<u8>,
 }
 
 impl CustomSec {
@@ -118,7 +116,7 @@ pub struct Export {
     pub desc: ExportDesc,
 }
 
-#[derive(Debug)]
+#[derive(Debug, FromPrimitive)]
 pub enum ExportTag {
     Func,   //0
     Table,  //1
@@ -133,8 +131,8 @@ impl Default for ExportTag {
 
 #[derive(Debug, Default)]
 pub struct ExportDesc {
-    tag: ExportTag,
-    idx: u32,
+    pub tag: ExportTag,
+    pub idx: u32,
 }
 
 #[derive(Debug, Default)]
@@ -146,20 +144,37 @@ pub struct Elem {
 
 #[derive(Debug, Default)]
 pub struct Code {
-    locals: Locals,
+    locals: Vec<Locals>,
     expr: Expr, // 字节码
 }
 
 impl Code {
-    pub fn new(l: Locals, e: Expr) -> Self {
+    pub fn new(l: Vec<Locals>, e: Expr) -> Self {
         Self { locals: l, expr: e }
+    }
+}
+
+impl fmt::Display for Code {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let locals: Vec<String> = self.locals.iter().map(|x| x.to_string()).collect();
+        if locals.len() > 0 {
+            write!(f, "locals={}", locals.join(","))
+        } else {
+            write!(f, "locals=[]")
+        }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct Locals {
-    n: u32,
-    type_: ValType,
+    pub n: u32,
+    pub type_: ValType,
+}
+
+impl fmt::Display for Locals {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{} x {}]", self.type_, self.n)
+    }
 }
 
 #[derive(Debug, Default)]
@@ -167,4 +182,15 @@ pub struct Data {
     pub mem: MemIdx,
     pub offset: Expr,
     pub init: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_print_sec_id() {
+        let sec_id = SecID::SecCustomID;
+        println!("sec_id is {:?}", sec_id);
+    }
 }

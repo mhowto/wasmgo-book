@@ -188,9 +188,6 @@ impl WasmReader {
         }
     }
 
-    // fn read_code(&mut self) -> Code {
-    // bytes
-    // }
 
     pub fn read_module(&mut self) -> Module {
         let mut module = Module::default();
@@ -201,25 +198,27 @@ impl WasmReader {
     }
 
     fn read_sections(&mut self, module: &mut Module) {
-        let mut prev_sec_id = SecID::SecCodeID;
+        let mut prev_sec_id = SecID::SecCustomID;
         while self.remaining() > 0 {
             let sec_id: SecID = num::FromPrimitive::from_u8(self.read_byte()).unwrap();
 
             if sec_id == SecID::SecCustomID {
                 module.custom_secs.push(self.read_custom_sec());
+                continue;
             }
 
             if sec_id > SecID::SecDataID || sec_id <= prev_sec_id {
-                panic!("malformed section id: {}", sec_id);
+                panic!("malformed section id: {:?}, prev_sec_id: {:?}", sec_id, prev_sec_id);
             }
 
             let n = self.read_var_u32();
             let remaining_before_read = self.remaining();
             self.read_non_custom_sec(&sec_id, module);
             if self.remaining() + n as usize != remaining_before_read {
-                panic!("section size mismatch, id: {}", sec_id);
+                panic!("section size mismatch, id: {:?}", sec_id);
             }
             prev_sec_id = sec_id;
+            // println!("remaining {} after read {:?}", self.remaining(), prev_sec_id);
         }
     }
 
@@ -282,9 +281,11 @@ impl WasmReader {
         result
     }
     fn read_expr(&mut self) -> Expr {
-        unimplemented!();
-        // while self.read_byte() != 0x08 {
+        while self.read_byte() != 0x0B {
+        }
+        Expr{}
     }
+
     fn read_export_sec(&mut self) -> Vec<Export> {
         let cap = self.read_var_u32() as usize;
         let mut result: Vec<Export> = Vec::with_capacity(cap);
@@ -300,7 +301,10 @@ impl WasmReader {
         }
     }
     fn read_export_desc(&mut self) -> ExportDesc {
-        unimplemented!();
+        ExportDesc{
+            tag: num::FromPrimitive::from_u8(self.read_byte()).unwrap(),
+            idx: self.read_var_u32(),
+        }
     }
     fn read_start_sec(&mut self) -> Option<u32> {
         Some(self.read_var_u32())
@@ -329,7 +333,22 @@ impl WasmReader {
         result
     }
     fn read_code(&mut self) -> Code {
-        unimplemented!();
+        let mut code_reader = WasmReader::new(self.read_bytes());
+        Code::new(code_reader.read_locals_vec(), Expr::default())
+    }
+    fn read_locals_vec(&mut self) -> Vec<Locals> {
+        let cap = self.read_var_u32() as usize;
+        let mut result: Vec<Locals> = Vec::with_capacity(cap);
+        for i in 0..cap {
+            result.push(self.read_locals());
+        }
+        result
+    }
+    fn read_locals(&mut self) -> Locals {
+        Locals{
+            n: self.read_var_u32(),
+            type_: self.read_val_type(),
+        }
     }
     fn read_data_sec(&mut self) -> Vec<Data> {
         let cap = self.read_var_u32() as usize;

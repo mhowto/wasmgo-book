@@ -162,6 +162,7 @@ func (reader *wasmReader) readSections(module *Module) {
 		if reader.remaining()+int(n) != remainingBeforeRead {
 			panic(fmt.Errorf("section size mismatch, id: %d", secID))
 		}
+		// fmt.Printf("remaining %d after read %+v\n", reader.remaining(), prevSecID)
 	}
 }
 func (reader *wasmReader) readCustomSec() CustomSec {

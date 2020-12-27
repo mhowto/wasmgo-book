@@ -8,6 +8,9 @@ extern crate quick_error;
 #[macro_use]
 extern crate num_derive;
 
+// use backtrace::Backtrace;
+// use std::panic;
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "wasm-rust")]
 struct Opt {
@@ -22,13 +25,9 @@ struct Opt {
 fn main() {
     let opt = Opt::from_args();
 
-    let decoded_contents = binary::decode_file(opt.file).expect("error to read file");
+    let module = binary::decode_file(opt.file).expect("error to read file");
 
     if opt.dump {
-        dump(decoded_contents);
+        binary::Dumper::new(&module).dump();
     }
-}
-
-fn dump(module: binary::Module) {
-    println!("{:?}", module)
 }
