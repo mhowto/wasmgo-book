@@ -4,26 +4,17 @@ use super::types::*;
 #[derive(Debug, Default)]
 pub struct Expr {}
 
-pub trait Instruction {
-    fn get_opcode(&self) -> Opcode;
-    fn get_opname(&self) -> &str {
-        OPNAMES[self.get_opcode() as usize]
-    }
+pub enum Instruction {
+    Block { block_tyep: BlockType, insts: Vec<Box<Instruction>> },
+    If { block_tyep: BlockType, insts1: Vec<Box<Instruction>>, insts2: Vec<Box<Instruction>> },
+    Mem { opcode: Opcode, align: u32, offset: u32 },
+    Br { label_idx: LabelIdx },
+    BrIf { label_idx: LabelIdx },
+    BrTable {tables: Vec<LabelIdx>, default_: LabelIdx }, 
 }
 
 enum BlockType {
     Empty,
     ValType(ValType),
     TypeIdx(u32),
-}
-
-pub struct BlockInst {
-    block_type: BlockType,
-    insts: Vec<Box<Instruction>>,
-} 
-
-impl Instruction for BlockInst {
-    fn get_opcode(&self) -> Opcode {
-        Opcode::Block
-    } 
 }

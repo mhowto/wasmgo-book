@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub enum Opcode {
     Unreachable       = 0x00, // unreachable
 	Nop               = 0x01, // nop
